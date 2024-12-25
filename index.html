@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LAGRIMAS DE ZURDO - THE GAME</title>
+    <style>
+        body {
+            background-image: url('https://i.ibb.co/kKg6QZy/WALLPAPER-FINAL-2.jpg');
+            background-size: cover;
+            background-position: center;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin: 20px 0;
+            color: #FFD700;
+            text-shadow: 2px 2px 5px black;
+        }
+
+        #gameCanvas {
+            display: block;
+            margin: 0 auto;
+            background-color: rgba(255, 255, 255, 0.7);
+            border: 5px solid #FFD700;
+            border-radius: 10px;
+        }
+
+        #info {
+            color: #FFD700;
+            text-shadow: 1px 1px 3px black;
+        }
+
+        #phrase {
+            color: #FFD700;
+            font-size: 2em;
+            margin-top: 10px;
+            text-shadow: 3px 3px 5px black;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-weight: bold;
+            text-align: center;
+            animation: fadeOut 3s forwards;
+        }
+
+        @keyframes fadeOut {
+            0% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+            }
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            justify-content: space-between;
+            width: 200px;
+        }
+
+        .button {
+            width: 80px;
+            height: 80px;
+            background-color: #FFD700;
+            border: 2px solid #000;
+            border-radius: 50%;
+            font-size: 1.5em;
+            font-weight: bold;
+            text-align: center;
+            line-height: 80px;
+            box-shadow: 2px 2px 5px black;
+            cursor: pointer;
+        }
+    </style>
+    <link rel="icon" href="https://hoydia.com.ar/wp-content/uploads/2023/09/foto-pag-8.jpg" type="image/jpeg">
+</head>
+<body>
+    <h1>LAGRIMAS DE ZURDO - THE GAME</h1>
+    <audio id="backgroundMusic" autoplay loop>
+        <source src="https://public-storage.example.com/audio/La_Misa_ME_CHUPA_LA_OPINION_DE_LOS_KUKAS.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    <canvas id="gameCanvas" width="400" height="600"></canvas>
+    <p id="info">Usa las flechas izquierda y derecha para mover el vaso de champagne y recolectar las lágrimas.</p>
+    <p id="phrase"></p>
+
+    <div class="controls">
+        <div class="button" id="left">⬅</div>
+        <div class="button" id="right">➡</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const phraseElement = document.getElementById('phrase');
+
+        // Game settings
+        const gameWidth = canvas.width;
+        const gameHeight = canvas.height;
+        const drops = [];
+        const phrases = [
+            "Zurdos hijos de puta, tiemblen, la libertad avanza.",
+            "No se negocia con los zurdos de mierda, ni un milímetro.",
+            "Vamos a hacer temblar a los colectivistas hijos de puta, ¡viva la libertad carajo!",
+            "Zurdos, se les acabó la joda, tiemblen porque la verdad avanza.",
+            "La casta política de mierda va a tener que laburar, ¡tiemblen!",
+            "A los zurdos no se les da ni un centímetro, porque te destrozan.",
+            "¡Corran, zurdos de mierda, el cambio ha llegado!",
+            "No hay que dejar que los zurdos entren por ningún lado, ¡por ninguno!",
+            "Zurdos, si no quieren que los aplaste la realidad, tiemblen ahora.",
+            "Tres décadas de zurdos hijos de puta y ahora es el momento de la libertad.",
+            "Zurdos, el futuro es liberal, tiemblen o mejor, ¡despídanse!",
+            "Las mentiras zurdas se terminan, ¡viva la libertad, carajo!",
+            "Zurdos, su tiempo de parásitos se acabó, ¡tiemblen y temblarán!",
+            "Quiero ver a los zurdos de mierda temblando ante la verdad.",
+            "¡Zurdos, se les acabó la fiesta! La realidad viene por ustedes.",
+            "No hay lugar para los zurdos hijos de puta en el nuevo Argentina.",
+            "Zurdos, prepárense para ser parte de la historia, como los grandes fracasos.",
+            "La libertad va a pasar por encima de los zurdos, ¡tiemblen!",
+            "Zurdos, la libertad no se negocia, se impone, ¡tiemblen!",
+            "Zurdos, se les acabó el chupar del Estado, ¡viva la libertad, carajo!"
+        ];
+
+        let score = 0;
+        let lives = 3;
+
+        // Load images
+        const glassImg = new Image();
+        glassImg.src = 'https://i.ibb.co/7VWHKfF/COPA.png'; // Vaso de champagne
+
+        const dropImg = new Image();
+        dropImg.src = 'https://i.ibb.co/tL7PTPN/TEAR.png'; // Lágrima
+
+        // Glass settings
+        const glass = {
+            x: gameWidth / 2 - 25,
+            y: gameHeight - 60,
+            width: 50,
+            height: 60,
+            speed: 8
+        };
+
+        // Generate drops
+        function createDrop() {
+            const x = Math.random() * (gameWidth - 20);
+            drops.push({ x: x, y: 0, width: 20, height: 20 });
+        }
+
+        // Draw the glass
+        function drawGlass() {
+            ctx.drawImage(glassImg, glass.x, glass.y, glass.width, glass.height);
+        }
+
+        // Draw drops
+        function drawDrops() {
+            drops.forEach(drop => {
+                ctx.drawImage(dropImg, drop.x, drop.y, drop.width, drop.height);
+            });
+        }
+
+        // Update drops
+        function updateDrops() {
+            for (let i = drops.length - 1; i >= 0; i--) {
+                drops[i].y += 3;
+
+                // Check for collision with glass
+                if (
+                    drops[i].x < glass.x + glass.width &&
+                    drops[i].x + drops[i].width > glass.x &&
+                    drops[i].y + drops[i].height > glass.y
+                ) {
+                    drops.splice(i, 1);
+                    score++;
+                    const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+                    showPhrase(randomPhrase);
+                } else if (drops[i].y > gameHeight) {
+                    drops.splice(i, 1);
+                    lives--;
+                }
+            }
+        }
+
+        function showPhrase(phrase) {
+            phraseElement.textContent = phrase;
+            phraseElement.style.animation = 'none';
+            setTimeout(() => {
+                phraseElement.style.animation = '';
+            }, 10);
+        }
+
+        // Draw score and lives
+        function drawScoreAndLives() {
+            ctx.fillStyle = 'black';
+            ctx.font = '16px Arial';
+            ctx.fillText(`Puntos: ${score}`, 10, 20);
+            ctx.fillText(`Vidas: ${lives}`, gameWidth - 80, 20);
+        }
+
+        // Handle keyboard input
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft' && glass.x > 0) {
+                glass.x -= glass.speed;
+            } else if (e.key === 'ArrowRight' && glass.x + glass.width < gameWidth) {
+                glass.x += glass.speed;
+            }
+        });
+
+        // Handle touch input
+        document.getElementById('left').addEventListener('click', () => {
+            if (glass.x > 0) {
+                glass.x -= glass.speed;
+            }
+        });
+
+        document.getElementById('right').addEventListener('click', () => {
+            if (glass.x + glass.width < gameWidth) {
+                glass.x += glass.speed;
+            }
+        });
+
+        // Game loop
+        function gameLoop() {
+            ctx.clearRect(0, 0, gameWidth, gameHeight);
+
+            drawGlass();
+            drawDrops();
+            drawScoreAndLives();
+
+            updateDrops();
+
+            if (lives > 0) {
+                requestAnimationFrame(gameLoop);
+            } else {
+                ctx.fillStyle = 'red';
+                ctx.font = '24px Arial';
+                ctx.fillText('GAME OVER', gameWidth / 2 - 70, gameHeight / 2);
+                ctx.fillText(`Puntuación final: ${score}`, gameWidth / 2 - 90, gameHeight / 2 + 30);
+            }
+        }
+
+        // Start the game
+        setInterval(createDrop, 1500); // Reduced frequency of drops
+        gameLoop();
+    </script>
+</body>
+</html>
